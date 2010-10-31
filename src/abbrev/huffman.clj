@@ -15,7 +15,7 @@
       m)))
 
 (defn encoding-of [s]
-  "Returns a map of symbols to Huffman encoding"
+  "Returns a map of symbols to Huffman encoding."
   (condp = (count s)
     0 {}
     1 {(first s) 0}
