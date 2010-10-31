@@ -28,8 +28,23 @@
         (encoding-of 
           (flatten 
             [(repeat 1 :a) 
-             (repeat 2 :b) 
+             (repeat 2 :b)
              (repeat 4 :c) 
              (repeat 8 :d) 
+             (repeat 16 :e) 
+             (repeat 32 :f)])))))
+
+(deftest ensure-huffman-encode-on-an-odd-input-size-works-somehow-like-described-on-michael-dot-dipperstein-dot-com
+  (is (=
+        {:f '(0)
+         :d '(1 0)
+         :e '(1 1 0)
+         :b '(1 1 1 0)
+         :c '(1 1 1 1)}
+        (encoding-of 
+          (flatten 
+            [(repeat 2 :c) 
+             (repeat 4 :b)
+             (repeat 16 :d) 
              (repeat 16 :e) 
              (repeat 32 :f)])))))
