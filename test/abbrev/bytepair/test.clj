@@ -6,8 +6,8 @@
 (deftest ensure-bytepair-encode-works-like-the-wikipedia-example
   (is (=
         {:encoded "Wac",
-         :replacement-table {\Z "aa"
-                             \Y "Za"
-                             \X "Yb"
-                             \W "XX"}}
+         :table {\Z "aa"
+                 \Y "Za"
+                 \X "Yb"
+                 \W "XX"}}
         (encode "aaabaaabac"))))
