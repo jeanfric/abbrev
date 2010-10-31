@@ -46,3 +46,8 @@
                             (cons 1 sym))
                   new-out (conj out {keyh new-sym})]
               (recur (inc idx) new-out new-sym))))))))
+
+(defn encode [s]
+  (let [encodings (encoding-of s)]
+    {:table encodings
+     :encoded (mapcat (partial get encodings) s)}))
