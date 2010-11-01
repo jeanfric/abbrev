@@ -1,53 +1,88 @@
 (ns abbrev.huffman)
 
-(defn- huffman-sorted-freq-map [m] 
-  "Sorted map by value in decreasing order, and by key in increasing 
-   order if the values are equal, e.g. {:f 32, :e 16, :d 8, :c 4, :a 1, :b 1}."
-  (into
-    (sorted-map-by
-      (fn [k1 k2]
-        (let [val1 (get m k1) 
-              val2 (get m k2)
-              val-comp (* -1 (compare val1 val2))]
-          (if (= 0 val-comp)
-            ; keys must be ordered (non-zero compare) since
-            ; a map won't allow two identical keys 
-            (compare k1 k2) 
-            val-comp))))
-    m))
+(defn- sorted-map-by-value 
+  "Returns a sorted map, ordered by value."
+  ([m]
+    (sorted-map-by-value > m))
+  ([f m]
+    (into
+      (sorted-map-by
+        (fn [k1 k2]
+          (let [val1 (get m k1) 
+                val2 (get m k2)]
+            (if (f val1 val2) 1 -1)
+            )))
+      m)))
 
-; inspired by http://michael.dipperstein.com/huffman/index.html
+(defstruct #^{:private true} node 
+  :is_leaf?
+  :symbols
+  :weight
+  :left
+  :right)
+
+(defn- make-code-tree [l r]
+  (struct-map node
+    :is_leaf? false
+    :symbols (concat (:symbols l) (:symbols r))
+    :weight (+ (:weight l) (:weight r))
+    :left l
+    :right r))
+
+(defn- sorted-leaf-list [sorted-freq-map]
+  (map 
+    #(struct-map node
+       :is_leaf? true
+       :symbols (list (first %))
+       :weight (second %)
+       :left '()
+       :right '()) 
+    sorted-freq-map))
+
+(defn- insert-in-sorted-node-list [e l]
+  (if (empty? l) ; might get here if (rest l) was at the end of the list
+    (list e)
+    (if (>= (:weight e) (:weight (first l)))
+      (cons (first l) (insert-in-sorted-node-list e (rest l)))
+      (cons e l))))
+
+(defn make-huffman-tree [sorted-freq-map]    
+  (loop [node-list (sorted-leaf-list sorted-freq-map)]
+    (if (<= (count node-list) 1)
+      (first node-list)
+      (let [first-e (first node-list)
+            second-e (second node-list)
+            new-node (make-code-tree first-e second-e)
+            new-list (insert-in-sorted-node-list new-node (drop 2 node-list))]
+        (recur new-list)))))
+
+(comment "The tree will look like this:"
+  ({:is_leaf? false, :symbols (3 4 2 1), :weight 7, 
+    :left {:is_leaf? true, :symbols (3), :weight 3, :left (), :right ()}, 
+    :right {:is_leaf? false, :symbols (4 2 1), :weight 4, 
+            :left {:is_leaf? true, :symbols (4), :weight 2, :left (), :right ()}, 
+            :right {:is_leaf? false, :symbols (2 1), :weight 2, 
+                    :left {:is_leaf? true, :symbols (2), :weight 1, :left (), :right ()}, 
+                    :right {:is_leaf? true, :symbols (1), :weight 1, :left (), :right ()}}}}))
+
+(defn list-contains? [l value]
+  (not (empty? (filter #(= value %) l)))) 
+
+(defn find-symbol-path [s hufftree]
+  (loop [sym '()
+         tree hufftree]
+    (if (or (:is_leaf? tree) (empty? tree))
+      (reverse sym)
+      (if (list-contains? (:symbols (:left tree)) s)
+        (recur (cons 0 sym) (:left tree))
+        (recur (cons 1 sym) (:right tree))))))
+
 (defn encoding-of [s]
-  "Returns a map of symbols to Huffman encoding."
-  (condp = (count s)
-    0 {}
-    (let [freq-map (huffman-sorted-freq-map (frequencies s))]
-      (loop [idx 1
-             out {(ffirst freq-map) '(0)}
-             sym '(0)]
-        (if (= idx (count freq-map))
-          out
-          (if (>= idx (- (count freq-map) 2))
-            ; For the last two elements, following the canonical Huffman encoding algorithm,
-            ; the keys should be treated in alphabetical order, so even if the probability
-            ; of the first one is higher, it gets the last Huffman code.
-            (let [keyh1 (nth (keys freq-map) idx)
-                  keyh2 (nth (keys freq-map) (inc idx))
-                  possible-sym1 (reverse (conj (reverse (drop-last sym)) 1 0))
-                  possible-sym2 (reverse (conj (reverse (drop-last sym)) 1 1))
-                  new-out (conj out (if (= (compare keyh1 keyh2) -1) ; keyh1 < keyh2
-                                      {keyh1 possible-sym1 keyh2 possible-sym2}
-                                      {keyh1 possible-sym2 keyh2 possible-sym1}))]
-              (recur (+ idx 2) new-out nil))
-            ; Else we just go down the list as usual (pre-sorted correctly).
-            (let [keyh (nth (keys freq-map) idx)
-                  new-sym (if (= idx (dec (count freq-map)))
-                            (cons 1 (drop-last sym))
-                            (cons 1 sym))
-                  new-out (conj out {keyh new-sym})]
-              (recur (inc idx) new-out new-sym))))))))
+  (let [sorted-freq-map (sorted-map-by-value (frequencies s))
+        symbols (keys sorted-freq-map)
+        tree (make-huffman-tree sorted-freq-map)]
+    (into {}
+      (map 
+        (fn [s] {s (find-symbol-path s tree)})
+        symbols))))
 
-(defn encode [s]
-  (let [encodings (encoding-of s)]
-    {:table encodings
-     :encoded (mapcat (partial get encodings) s)}))
