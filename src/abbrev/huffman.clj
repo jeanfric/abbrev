@@ -1,17 +1,19 @@
 (ns abbrev.huffman)
 
-(defn- sorted-map-by-value 
+(defn list-contains? [l value]
+  (not (empty? (filter #(= value %) l)))) 
+
+(defn sorted-map-by-value 
   "Returns a sorted map, ordered by value."
   ([m]
-    (sorted-map-by-value > m))
+    (sorted-map-by-value < m))
   ([f m]
     (into
       (sorted-map-by
         (fn [k1 k2]
           (let [val1 (get m k1) 
                 val2 (get m k2)]
-            (if (f val1 val2) 1 -1)
-            )))
+            (if (f val1 val2) -1 1))))
       m)))
 
 (defstruct #^{:private true} node 
@@ -46,7 +48,7 @@
       (cons (first l) (insert-in-sorted-node-list e (rest l)))
       (cons e l))))
 
-(defn make-huffman-tree [sorted-freq-map]    
+(defn- make-huffman-tree [sorted-freq-map]    
   (loop [node-list (sorted-leaf-list sorted-freq-map)]
     (if (<= (count node-list) 1)
       (first node-list)
@@ -65,10 +67,7 @@
                     :left {:is_leaf? true, :symbols (2), :weight 1, :left (), :right ()}, 
                     :right {:is_leaf? true, :symbols (1), :weight 1, :left (), :right ()}}}}))
 
-(defn list-contains? [l value]
-  (not (empty? (filter #(= value %) l)))) 
-
-(defn find-symbol-path [s hufftree]
+(defn- find-symbol-path [s hufftree]
   (loop [sym '()
          tree hufftree]
     (if (or (:is_leaf? tree) (empty? tree))
@@ -85,4 +84,3 @@
       (map 
         (fn [s] {s (find-symbol-path s tree)})
         symbols))))
-

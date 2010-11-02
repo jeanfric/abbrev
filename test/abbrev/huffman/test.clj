@@ -2,6 +2,20 @@
   (:use [abbrev.huffman] :reload)
   (:use [clojure.test]))
 
+(deftest ensure-a-simple-list-gets-encoded-correctly
+  (is
+    (=
+      {1 '(0)
+       2 '(1 0)
+       3 '(1 1 0)
+       4 '(1 1 1 0) 
+       5 '(1 1 1 1)}
+      (encoding-of [1 1 1 1 1 
+                    2 2 2 
+                    3 3 
+                    4 
+                    5]))))
+
 (deftest ensure-insert-in-sorted-node-list-works-with-an-empty-list
   (is
     (=
