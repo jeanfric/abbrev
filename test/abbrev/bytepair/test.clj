@@ -2,12 +2,19 @@
   (:use [abbrev.bytepair] :reload)
   (:use [clojure.test]))
 
-
-(deftest ensure-bytepair-encode-works-like-the-wikipedia-example
+(deftest ensure-find-next-double-works
   (is (=
-        {:encoded "Wac",
-         :table {\Z "aa"
-                 \Y "Za"
-                 \X "Yb"
-                 \W "XX"}}
-        (encode "aaabaaabac"))))
+        '(\a \a)
+        (#'abbrev.bytepair/find-next-double "aaabaaabac")))
+  (is (=
+        '(\Z \a)
+        (#'abbrev.bytepair/find-next-double "ZabZabac"))))
+
+; http://www.csse.monash.edu.au/cluster/RJK/Compress/problem.html
+(deftest ensure-bytepair-encode-works-like-the-monash-dot-edu-dot-au-example
+  (is (=
+        {:encoded '(\E \F \F \D),
+         :table (list
+                  (list \F (list \E \C))   
+                  (list \E (list \A \B)))}
+        (encode "ABABCABCD"))))
