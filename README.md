@@ -1,4 +1,4 @@
-Abbrev is a library of lossless compression/decompression algorithms, 
+abbrev is a library of lossless compression/decompression algorithms, 
 written in the [Clojure](http://clojure.org) programming language.
 
 Status
